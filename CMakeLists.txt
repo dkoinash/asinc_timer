@@ -5,7 +5,7 @@ project(MyTimer)
 
 # add the executable
 add_executable(MyTimer
-                myTimer.cpp
+                # myTimer.cpp
                 myTimer.h
                 main.cpp
                 )

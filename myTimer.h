@@ -1,60 +1,83 @@
 #pragma once
+
+#include <atomic>
 #include <chrono>
-#include <ctime>
 #include <functional>
+#include <iostream>
 #include <thread>
 
-namespace Timer {
+/// Псевдоним функции, вызываемой по истечению таймаута
+using CallFn = std::function<void()>;
 
-class Timer
+/// Псевдомин для длительности
+using Duration = std::chrono::steady_clock::duration;
+
+namespace Timer {
+/**
+ * @brief Асинхронный таймер
+ */
+class AsyncTimer
 {
 public:
   /**
-   * @brief                 Запуск таймера
+   * @brief Конструктор
    *
-   * @tparam Rep            Количество тиков
-   * @tparam Period         Период тика
-   * @param[in] delay       Заданное время срабатывания таймера
-   * @param[in] callBackFn  Функция, вызываемая при завершении отсчёта времени таймера
+   * @param[in] callback Callback функция
    */
-  template<class Rep, class Period>
-  void Start(const std::chrono::duration<Rep, Period>& delay, std::function<void()> callBackFn)
+  AsyncTimer(CallFn callback)
+    : m_callback(callback)
+    , m_running(false)
+  {}
+
+  /**
+   * @brief Запуск отсчёта времени таймера
+   *
+   * @param[in] interval Интервал срабатывания таймера
+   */
+  void start(Duration interval)
   {
-    if (m_isActive) return;
-    if (delay.count() == 0) return;
-    if (callBackFn == nullptr) return;
-
-    std::cout << "Start called!" << std::endl;
-    m_isActive = true;
-
-    std::thread([&]() {
-      std::chrono::time_point<std::chrono::steady_clock> nextTimepoint =
-        std::chrono::steady_clock::now();
-
-      while (true) {
-        nextTimepoint += delay;
-
-        std::this_thread::sleep_until(nextTimepoint);
-        if (!m_isActive) break;
-        std::cout << "callBackFn called!" << std::endl;
-        callBackFn();
+    m_interval = interval;
+    if (m_running) return;
+    m_running = true;
+    m_worker  = std::thread([this]() {
+      while (m_running) {
+        std::this_thread::sleep_for(m_interval);
+        if (m_running) m_callback();
       }
-    }).detach();
+    });
   }
 
   /**
-   * @brief Остановка таймера
+   * @brief Остановка отсчёта времени таймера
    */
-  void Stop() { m_isActive = false; }
+  void stop()
+  {
+    m_running = false;
+    if (m_worker.joinable()) {
+      m_worker.join();
+    }
+  }
 
   /**
-   * @brief Запрос состояния таймера
+   * @brief Получение признака активации таймера
    *
    * @return Возвращает true если таймер запущен и false в противном случае
    */
-  bool IsActive() const { return m_isActive; }
+  bool isRunning() const { return m_running; }
+
+  /**
+   * @brief Деструктор
+   */
+  ~AsyncTimer() { stop(); }
 
 private:
-  bool m_isActive = false;
+  /// Интервал срабатывания
+  Duration m_interval;
+  /// Callback функция
+  CallFn m_callback;
+  /// Признак активности такймера
+  std::atomic<bool> m_running;
+  /// Поток таймера
+  std::thread m_worker;
 };
 } // namespace Timer

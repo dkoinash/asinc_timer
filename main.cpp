@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <iostream>
 
-#include "myTimer.h"
+#include "Timer.h"
 
 void
 TestFunc()
@@ -12,7 +12,7 @@ TestFunc()
 int
 main(int argc, char** argv)
 {
-  Timer::AsyncTimer timer(TestFunc);
+  Utils::AsyncTimer timer(TestFunc);
 
   timer.start(std::chrono::milliseconds(800));
   std::cout << "Старт" << std::endl;

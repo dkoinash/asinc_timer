@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 
 # set the project name
-project(MyTimer)
+project(AcyncTimer)
 
 # add the executable
-add_executable(MyTimer
-                # myTimer.cpp
-                myTimer.h
+add_executable(AcyncTimer
+                Timer.cpp
+                Timer.h
                 main.cpp
                 )

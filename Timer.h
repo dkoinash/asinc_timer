@@ -57,10 +57,14 @@ private:
   /// Callback функция
   CallFn m_callback;
   /// Признак активности такймера
-  std::atomic<bool> m_running;
+  bool m_running;
+  ///FixMe Дополнительный признак таймера
+  std::atomic<bool> m_timerOn;
   /// Поток таймера
   std::thread m_worker;
-    /// Условная переменная для прерывания таймера
+    /// Условная переменная для прерывания таймера при достищении заданного времени
   std::condition_variable m_cv;
+    /// Условная переменная для прерывания таймера при активации таймера
+  std::condition_variable m_cvRun;
 };
 } // namespace Timer

@@ -10,14 +10,14 @@ AsyncTimer::AsyncTimer(CallFn callback)
   m_worker = std::thread([this]() {
     std::mutex mtx;
 
-    while (m_timerOn) {
+    while (true) {
       std::unique_lock<std::mutex> lock(mtx);
 
-      m_cvRun.wait(lock, [this] { return m_running; });
+      m_cvRun.wait(lock, [this] { return m_running || !m_timerOn; });
 
-      if (m_cv.wait_for(lock, m_interval) == std::cv_status::no_timeout) continue;
+      if (!m_timerOn) break;
 
-      m_callback();
+      if (m_cv.wait_for(lock, m_interval) == std::cv_status::timeout) m_callback();
     }
   });
 }
@@ -30,7 +30,7 @@ AsyncTimer::start(Duration interval)
   if (m_running) return;
 
   m_running = true;
-  
+
   m_cv.notify_one();
   m_cvRun.notify_one();
 }
@@ -55,7 +55,7 @@ AsyncTimer::isRunning() const
 AsyncTimer::~AsyncTimer()
 {
   m_timerOn = false;
-
+  m_cvRun.notify_one();
   if (m_worker.joinable()) {
     m_worker.join();
   }
